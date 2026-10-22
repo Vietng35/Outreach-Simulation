@@ -19,7 +19,8 @@
     "bootstrap": "node scripts/bootstrap.js",
     "validate": "node scripts/validate-placeholders.js",
     "hooks": "lefthook install",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "test:rules": "pnpm --filter firestore-rules-tests test"
   },
   "devDependencies": {
     "lefthook": "^1.11.13",

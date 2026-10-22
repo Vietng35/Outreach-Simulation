@@ -1,6 +1,7 @@
 packages:
   - 'frontend'
   - 'backend'
+  - 'firebase'
 
 overrides:
   # firebase-functions pulls in @types/express@4 transitively, which conflicts
