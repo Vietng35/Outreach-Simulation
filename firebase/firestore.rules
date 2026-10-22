@@ -56,6 +56,116 @@ service cloud.firestore {
       allow delete: if false; // soft-delete only — set deletedAt field instead
     }
 
+    // ── Contact outreach ───────────────────────────────────────────────────
+    // A learner emails AI-simulated client contacts. Each learner may send at
+    // most 3 emails to each contact (change emailLimit() AND
+    // frontend/src/features/outreach/constants.ts together).
+    //
+    // How a send is enforced: the client commits ONE batch that
+    //   (a) creates engagements/{id}/messages/{messageId}, and
+    //   (b) updates engagements/{id}: emailCounts[contactId] += 1,
+    //       lastMessageId = messageId.
+    // Each half is only allowed if the other half is in the same batch
+    // (checked with getAfter / existsAfter), so a message can't be sent
+    // without being counted, and the count can't move without a message.
+    // AI replies (direction 'inbound') are written by a Server Action with
+    // the Admin SDK, which bypasses these rules — clients can never create them.
+
+    function emailLimit() {
+      return 3;
+    }
+
+    function engagementPath(engagementId) {
+      return /databases/$(database)/documents/engagements/$(engagementId);
+    }
+
+    function messagePath(engagementId, messageId) {
+      return /databases/$(database)/documents/engagements/$(engagementId)/messages/$(messageId);
+    }
+
+    // scenarios/{scenarioId} and contacts — seeded with the Admin SDK, read-only here.
+    // scenarios/{scenarioId}/contactPersonas/* has no rule, so the default deny
+    // keeps the AI persona prompts (and who the decision-maker is) server-only.
+    match /scenarios/{scenarioId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+
+      match /contacts/{contactId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+    }
+
+    // engagements/{uid}_{scenarioId}
+    match /engagements/{engagementId} {
+      // resource == null lets the client check whether its own engagement exists yet.
+      allow read: if isAuthenticated()
+        && (resource == null || resource.data.userId == request.auth.uid);
+
+      // Created on the learner's first visit, empty.
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && engagementId == request.auth.uid + '_' + request.resource.data.scenarioId
+        && exists(/databases/$(database)/documents/scenarios/$(request.resource.data.scenarioId))
+        && request.resource.data.keys().hasOnly(['userId', 'scenarioId', 'emailCounts', 'startedAt', '_schemaVersion'])
+        && request.resource.data.keys().hasAll(['userId', 'scenarioId', 'emailCounts', 'startedAt', '_schemaVersion'])
+        && request.resource.data.emailCounts == {}
+        && request.resource.data.startedAt == request.time
+        && request.resource.data._schemaVersion == 1;
+
+      // Only as part of a send batch: exactly one contact's count rises by
+      // exactly one, to at most emailLimit(), tied to a brand-new outbound message.
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['emailCounts', 'lastMessageId'])
+        && isCountedSend(engagementId, request.resource.data.lastMessageId);
+
+      allow delete: if false;
+
+      function isCountedSend(eid, mid) {
+        let newMessage = getAfter(messagePath(eid, mid)).data;
+        let contactId = newMessage.contactId;
+        let before = resource.data.emailCounts.get(contactId, 0);
+        let after = request.resource.data.emailCounts.get(contactId, 0);
+        return mid is string
+          && !exists(messagePath(eid, mid))            // message did not exist before this batch
+          && existsAfter(messagePath(eid, mid))        // ...and does after it
+          && newMessage.direction == 'outbound'
+          && request.resource.data.emailCounts.diff(resource.data.emailCounts).affectedKeys().hasOnly([contactId])
+          && after == before + 1
+          && after <= emailLimit();
+      }
+
+      // engagements/{id}/messages/{messageId}
+      match /messages/{messageId} {
+        allow read: if isAuthenticated()
+          && get(engagementPath(engagementId)).data.userId == request.auth.uid;
+
+        allow create: if isAuthenticated()
+          && get(engagementPath(engagementId)).data.userId == request.auth.uid
+          && isValidOutbound(request.resource.data)
+          && exists(/databases/$(database)/documents/scenarios/$(get(engagementPath(engagementId)).data.scenarioId)/contacts/$(request.resource.data.contactId))
+          // the same batch must bump this contact's counter and point at this message
+          && getAfter(engagementPath(engagementId)).data.lastMessageId == messageId
+          && getAfter(engagementPath(engagementId)).data.emailCounts.get(request.resource.data.contactId, 0)
+             == get(engagementPath(engagementId)).data.emailCounts.get(request.resource.data.contactId, 0) + 1;
+
+        // Sent emails are an immutable record.
+        allow update, delete: if false;
+      }
+
+      function isValidOutbound(data) {
+        return data.keys().hasOnly(['contactId', 'direction', 'subject', 'body', 'createdAt', '_schemaVersion'])
+          && data.keys().hasAll(['contactId', 'direction', 'subject', 'body', 'createdAt', '_schemaVersion'])
+          && data.direction == 'outbound'
+          && data.contactId is string
+          && data.subject is string && data.subject.trim().size() > 0 && data.subject.size() <= 120
+          && data.body is string && data.body.trim().size() > 0 && data.body.size() <= 2000
+          && data.createdAt == request.time
+          && data._schemaVersion == 1;
+      }
+    }
+
     // Add new collection rules above this comment using the /firebase-collection skill.
 
     // ── Default deny ───────────────────────────────────────────────────────
