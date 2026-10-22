@@ -1,6 +1,6 @@
 /**
  * Business rules for contact outreach. The same numbers are enforced in
- * firebase/firestore.rules — if you change one, change both.
+ * firebase/firestore.rules (emailLimit() and isValidOutbound()) — if you change one, change both.
  */
 export const EMAIL_LIMIT_PER_CONTACT = 3
 export const SUBJECT_MAX = 120
