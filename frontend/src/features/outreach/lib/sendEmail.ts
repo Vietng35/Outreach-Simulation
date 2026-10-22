@@ -33,6 +33,11 @@ export async function ensureEngagement(uid: string, scenarioId: string): Promise
   return id
 }
 
+/** Reserve a message ID before sending, so the UI can track the email from the start. */
+export function newOutreachMessageId(engagementId: string): string {
+  return doc(collection(getClientDb(), 'engagements', engagementId, 'messages')).id
+}
+
 export type SendResult =
   | { success: true; messageId: string }
   | { success: false; error: string; reason: 'invalid' | 'limit' | 'failed' }
@@ -48,6 +53,8 @@ export async function sendOutreachEmail(params: {
   engagementId: string
   contactId: string
   draft: EmailDraft
+  /** From newOutreachMessageId(); a fresh ID is generated if omitted. */
+  messageId?: string
 }): Promise<SendResult> {
   const parsed = emailDraftSchema.safeParse(params.draft)
   if (!parsed.success) {
@@ -60,7 +67,8 @@ export async function sendOutreachEmail(params: {
 
   const db = getClientDb()
   const engagementRef = doc(db, 'engagements', params.engagementId)
-  const messageRef = doc(collection(engagementRef, 'messages'))
+  const messages = collection(engagementRef, 'messages')
+  const messageRef = params.messageId ? doc(messages, params.messageId) : doc(messages)
 
   const batch = writeBatch(db)
   batch.set(messageRef, {
