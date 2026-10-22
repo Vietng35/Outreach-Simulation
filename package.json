@@ -20,7 +20,8 @@
     "validate": "node scripts/validate-placeholders.js",
     "hooks": "lefthook install",
     "prepare": "lefthook install",
-    "test:rules": "pnpm --filter firestore-rules-tests test"
+    "test:rules": "pnpm --filter firestore-rules-tests test",
+    "seed:outreach": "node scripts/seed-outreach.js"
   },
   "devDependencies": {
     "lefthook": "^1.11.13",
