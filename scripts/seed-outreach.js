@@ -12,8 +12,11 @@
 
 const fs = require('fs')
 const path = require('path')
-const { initializeApp, cert } = require('firebase-admin/app')
-const { getFirestore } = require('firebase-admin/firestore')
+// firebase-admin is a dependency of the frontend package, so resolve it from there
+const frontendDir = path.resolve(__dirname, '..', 'frontend')
+const fromFrontend = (id) => require(require.resolve(id, { paths: [frontendDir] }))
+const { initializeApp, cert } = fromFrontend('firebase-admin/app')
+const { getFirestore } = fromFrontend('firebase-admin/firestore')
 
 function readEnv() {
   const envPath = path.resolve(__dirname, '..', '.env')

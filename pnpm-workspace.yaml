@@ -22,6 +22,7 @@ overrides:
 
 allowBuilds:
   '@firebase/util': true
+  '@google/genai': set this to true or false
   esbuild: true
   lefthook: true
   protobufjs: true
