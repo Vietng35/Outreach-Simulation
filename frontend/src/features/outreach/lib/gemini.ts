@@ -1,7 +1,7 @@
 import 'server-only'
 import { GoogleGenAI, type Content } from '@google/genai'
 
-const DEFAULT_MODEL = 'gemini-2.5-flash'
+const DEFAULT_MODEL = 'gemini-3.6-flash'
 
 export interface ThreadEntry {
   direction: 'outbound' | 'inbound'
@@ -77,7 +77,7 @@ export async function generateContactReply(ctx: ReplyContext, timeoutMs: number)
       config: {
         systemInstruction: buildSystemInstruction(ctx),
         temperature: 0.8,
-        maxOutputTokens: 400,
+        maxOutputTokens: 1024,
         abortSignal: controller.signal,
         // Flash models think by default; switching it off keeps replies fast.
         ...(model.startsWith('gemini-2.5-flash') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
