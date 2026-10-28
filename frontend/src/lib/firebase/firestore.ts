@@ -1,6 +1,6 @@
 import { collection, doc, type CollectionReference, type DocumentData } from 'firebase/firestore'
 import { getClientDb } from './client'
-import type { UserProfile } from '@/types/firestore'
+import type { Contact, Engagement, OutreachMessage, Scenario, UserProfile } from '@/types/firestore'
 
 /**
  * Creates a typed Firestore collection reference.
@@ -22,4 +22,31 @@ export function getUsersCollection() {
 
 export function userDoc(uid: string) {
   return doc(getUsersCollection(), uid)
+}
+
+// ── Contact outreach feature ─────────────────────────────────────────────────
+
+export function getScenariosCollection() {
+  return typedCollection<Scenario>('scenarios')
+}
+
+export function scenarioDoc(scenarioId: string) {
+  return doc(getScenariosCollection(), scenarioId)
+}
+
+export function getContactsCollection(scenarioId: string) {
+  return typedCollection<Contact>(`scenarios/${scenarioId}/contacts`)
+}
+
+/** Deterministic ID: one engagement per learner per scenario. */
+export function engagementId(uid: string, scenarioId: string) {
+  return `${uid}_${scenarioId}`
+}
+
+export function engagementDoc(engagementIdValue: string) {
+  return doc(typedCollection<Engagement>('engagements'), engagementIdValue)
+}
+
+export function getMessagesCollection(engagementIdValue: string) {
+  return typedCollection<OutreachMessage>(`engagements/${engagementIdValue}/messages`)
 }

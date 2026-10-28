@@ -1,0 +1,68 @@
+name: Deploy Firestore Rules
+
+# The web app deploys through Vercel's GitHub integration (preview on every PR,
+# production on merge to main). Firestore rules are owned by Firebase, so this
+# workflow ships them — but only after the rules tests pass.
+#
+# Required repository secrets:
+#   FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 — same value as in .env
+#   FIREBASE_PROJECT_ID                  — your Firebase project id
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase/**'
+      - '.github/workflows/deploy-rules.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-firestore-rules
+  cancel-in-progress: false
+
+jobs:
+  test-rules:
+    name: Firestore Rules Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:rules
+
+  deploy:
+    name: Deploy rules
+    needs: test-rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/gcp-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-sa.json" >> "$GITHUB_ENV"
+
+      - name: Deploy Firestore rules
+        run: >
+          npx --yes firebase-tools@14.27.0 deploy
+          --only firestore:rules
+          --project "${{ secrets.FIREBASE_PROJECT_ID }}"
+          --non-interactive

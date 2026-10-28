@@ -21,20 +21,22 @@ pnpm run env:sync       # also runs automatically before `pnpm run dev`
 
 ## Variables (defined in root `.env`)
 
-| Variable | Secret | Required | Description |
-|---------|--------|----------|-------------|
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | No | Yes | Firebase project id — must match `.firebaserc`. Synced under the same name to both frontend and backend. |
-| `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64` | **Yes** | Yes | Base64-encoded service account JSON. Synced to both packages; server-only in each. |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | No | Yes | Firebase web app config → `apiKey` |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | No | Yes | Web app config → `authDomain` |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | No | Yes | Web app config → `messagingSenderId` |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | No | Yes | Web app config → `appId` |
-| `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` | No | No | Web app config → `measurementId` (only if Analytics is on) |
-| `NEXT_PUBLIC_APP_URL` | No | Yes | Public app URL (`http://localhost:3000` locally) |
-| `NEXT_PUBLIC_APP_NAME` | No | Yes | App display name |
-| `CORS_ORIGIN` | No | No | Allowed CORS origin for the API (empty = deny all cross-origin) |
-| `PORT` | No | No | Local Functions dev server port (default `5001`) |
-| `STITCH_API_KEY` | **Yes** | No | Google Stitch key for the Claude Code MCP (stays in root `.env` only) |
+| Variable                                   | Secret  | Required             | Description                                                                                                                                                                                   |
+| ------------------------------------------ | ------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID`          | No      | Yes                  | Firebase project id — must match `.firebaserc`. Synced under the same name to both frontend and backend.                                                                                      |
+| `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`      | **Yes** | Yes                  | Base64-encoded service account JSON. Synced to both packages; server-only in each.                                                                                                            |
+| `NEXT_PUBLIC_FIREBASE_API_KEY`             | No      | Yes                  | Firebase web app config → `apiKey`                                                                                                                                                            |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`         | No      | Yes                  | Web app config → `authDomain`                                                                                                                                                                 |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | No      | Yes                  | Web app config → `messagingSenderId`                                                                                                                                                          |
+| `NEXT_PUBLIC_FIREBASE_APP_ID`              | No      | Yes                  | Web app config → `appId`                                                                                                                                                                      |
+| `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`      | No      | No                   | Web app config → `measurementId` (only if Analytics is on)                                                                                                                                    |
+| `NEXT_PUBLIC_APP_URL`                      | No      | Yes                  | Public app URL (`http://localhost:3000` locally)                                                                                                                                              |
+| `NEXT_PUBLIC_APP_NAME`                     | No      | Yes                  | App display name                                                                                                                                                                              |
+| `GEMINI_API_KEY`                           | **Yes** | For outreach replies | Gemini Developer API key (free tier, [AI Studio](https://aistudio.google.com/apikey)). Synced to the frontend only; read by a Server Action, never sent to the browser. Add it to Vercel too. |
+| `GEMINI_MODEL`                             | No      | No                   | Gemini model for outreach replies. Defaults to `gemini-2.5-flash`.                                                                                                                            |
+| `CORS_ORIGIN`                              | No      | No                   | Allowed CORS origin for the API (empty = deny all cross-origin)                                                                                                                               |
+| `PORT`                                     | No      | No                   | Local Functions dev server port (default `5001`)                                                                                                                                              |
+| `STITCH_API_KEY`                           | **Yes** | No                   | Google Stitch key for the Claude Code MCP (stays in root `.env` only)                                                                                                                         |
 
 `NEXT_PUBLIC_*` values are compiled into the browser bundle — that prefix must **never** appear on a secret (a Claude Code hook blocks this).
 

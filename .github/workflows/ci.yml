@@ -80,6 +80,33 @@ jobs:
       - name: Run backend unit tests
         run: pnpm run test
 
+  test-rules:
+    name: Firestore Rules Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # The Firestore emulator is a Java app
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security-rules tests against the emulator
+        run: pnpm run test:rules
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
